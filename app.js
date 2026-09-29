@@ -345,12 +345,22 @@ function toast(data) {
   el.toasts.appendChild(node);
 
   var life = (typeof data.time === "number" && data.time > 0) ? data.time : 4000;
-  requestAnimationFrame(function () { node.classList.add("in"); });
 
-  bar.animate(
-    [{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }],
-    { duration: life, easing: "linear", fill: "forwards" }
-  );
+  /* A DUI surface can be occluded, and an occluded CEF surface may never run
+     requestAnimationFrame. Fall back to a timer so the toast cannot be
+     stranded at opacity 0. */
+  requestAnimationFrame(function () { node.classList.add("in"); });
+  setTimeout(function () { node.classList.add("in"); }, 60);
+
+  if (bar.animate) {
+    bar.animate(
+      [{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }],
+      { duration: life, easing: "linear", fill: "forwards" }
+    );
+  } else {
+    bar.style.transition = "transform " + life + "ms linear";
+    bar.style.transform = "scaleX(0)";
+  }
 
   setTimeout(function () {
     node.classList.remove("in");
