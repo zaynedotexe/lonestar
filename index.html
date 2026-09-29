@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lonestar</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="menu" class="menu hidden">
+
+  <aside class="rail">
+    <div class="brand">
+      <span class="brand-name" id="brand">Lonestar</span>
+      <span class="brand-version" id="version"></span>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+    <div class="rail-foot">
+      <div class="keybind-row"><span id="menuKey">INSERT</span><em>toggle menu</em></div>
+      <div class="keybind-row"><span>ENTER</span><em>select</em></div>
+      <div class="keybind-row"><span>BACK</span><em>back</em></div>
+    </div>
+  </aside>
+
+  <section class="body">
+    <header class="head">
+      <h1 id="crumb">Lonestar</h1>
+      <span class="sub" id="hint"></span>
+    </header>
+    <ul class="list" id="list"></ul>
+  </section>
+
+</div>
+
+<div id="dropdown" class="dropdown hidden">
+  <ul id="dropdownList"></ul>
+</div>
+
+<div id="keyboard" class="keyboard hidden">
+  <div class="kb-box">
+    <div class="kb-title" id="kbTitle">Input</div>
+    <div class="kb-value" id="kbValue"></div>
+    <div class="kb-foot">
+      <span><b>ENTER</b> confirm</span>
+      <span><b>ESC</b> cancel</span>
+    </div>
+  </div>
+</div>
+
+<div id="toasts" class="toasts"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
