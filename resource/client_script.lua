@@ -19,7 +19,8 @@ LS.Brand = "Lonestar"
 
 local CONFIG = {
     debug       = false,
-    accent      = { 255, 0, 0 },
+    -- Matches the Allstar DUI accent: rgb(242, 109, 220).
+    accent      = { 242, 109, 220 },
     window      = { title = "Lonestar", x = 1100, y = 550, w = 800, h = 500, tab = 150 },
     maxListRows = 32,
     defaultKey  = 0x2E, -- INSERT
@@ -1515,7 +1516,11 @@ function MachoMenuGetSelectedPlayer()
 end
 
 function MachoMenuSetAccent(_, r, g, b)
-    UI.accent = { r or 255, g or 0, b or 0 }
+    UI.accent = {
+        r or CONFIG.accent[1],
+        g or CONFIG.accent[2],
+        b or CONFIG.accent[3]
+    }
     Send({ action = "accent", accent = UI:AccentHex() })
 end
 

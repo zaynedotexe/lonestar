@@ -808,7 +808,11 @@ function MachoMenuGetSelectedPlayer()
 end
 
 function MachoMenuSetAccent(_, r, g, b)
-    UI.accent = { r or 255, g or 0, b or 0 }
+    UI.accent = {
+        r or CONFIG.accent[1],
+        g or CONFIG.accent[2],
+        b or CONFIG.accent[3]
+    }
     Send({ action = "accent", accent = UI:AccentHex() })
 end
 

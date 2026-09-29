@@ -1,52 +1,59 @@
 "use strict";
 
-/* Lonestar - DUI renderer.
-   Pure presentation: Lua owns the cursor, the input buffer and every
-   widget interaction, then pushes state down with these messages. */
+/* Lonestar - DUI renderer, matching the Allstar layout.
+   Pure presentation: Lua owns the cursor, the input buffer and every widget
+   interaction, then pushes state down with these messages. */
 
 var state = {
-  brand: "Lonestar",
-  version: "",
-  title: "Lonestar",
-  accent: "#ff0000",
-  tabs: [],
-  keybinds: [],
-  tabId: 0,
-  groupId: 0,
-  index: 0,
-  mode: "groups",
-  ddIndex: 0
+  brand: "Lonestar", version: "1.0", title: "Lonestar", status: "",
+  accent: "242, 109, 220",
+  tabs: [], keybinds: [],
+  tabIndex: 0, groupId: 0, index: 0,
+  mode: "groups"
 };
 
 var el = {
-  menu:    document.getElementById("menu"),
-  brand:   document.getElementById("brand"),
-  version: document.getElementById("version"),
-  bannerText: document.getElementById("bannerText"),
-  bannerTag:  document.getElementById("bannerTag"),
-  status:  document.getElementById("status"),
-  tabs:    document.getElementById("tabs"),
-  list:    document.getElementById("list"),
-  crumb:   document.getElementById("crumb"),
-  hint:    document.getElementById("hint"),
-  menuKey: document.getElementById("menuKey"),
-  dd:      document.getElementById("dropdown"),
-  ddList:  document.getElementById("dropdownList"),
-  kb:      document.getElementById("keyboard"),
-  kbTitle: document.getElementById("kbTitle"),
-  kbValue: document.getElementById("kbValue"),
-  toasts:  document.getElementById("toasts")
+  menu:       document.getElementById("menu"),
+  categories: document.getElementById("categories"),
+  highlight:  document.getElementById("highlight"),
+  list:       document.getElementById("list"),
+  vscroll:    document.getElementById("vscroll"),
+  desc:       document.getElementById("desc"),
+  descText:   document.getElementById("descText"),
+  bannerName: document.getElementById("bannerName"),
+  bannerVer:  document.getElementById("bannerVer"),
+  footerBrand: document.getElementById("footerBrand"),
+  footerName: document.getElementById("footerName"),
+  footerStatus: document.getElementById("footerStatus"),
+  keyboard:   document.getElementById("keyboard"),
+  kbTitle:    document.getElementById("kbTitle"),
+  kbValue:    document.getElementById("kbValue"),
+  keybinds:   document.getElementById("keybinds"),
+  kbList:     document.getElementById("kbList"),
+  dd:         document.getElementById("dropdown"),
+  ddList:     document.getElementById("dropdownList"),
+  toasts:     document.getElementById("toasts")
 };
 
-function setAccent(hex) {
-  if (typeof hex !== "string" || !/^#[0-9a-f]{6}$/i.test(hex)) return;
-  state.accent = hex;
-  document.documentElement.style.setProperty("--accent", hex);
+/* Accepts either "r, g, b" or "#rrggbb" so the Lua side can send either. */
+function setAccent(value) {
+  if (typeof value !== "string") return;
+  var rgb = null;
+  var m = value.match(/(\d{1,3})\D+(\d{1,3})\D+(\d{1,3})/);
+  if (m) {
+    rgb = m[1] + ", " + m[2] + ", " + m[3];
+  } else {
+    var h = value.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    if (!h) return;
+    rgb = parseInt(h[1], 16) + ", " + parseInt(h[2], 16) + ", " + parseInt(h[3], 16);
+  }
+  state.accent = rgb;
+  document.documentElement.style.setProperty("--menu-color", rgb);
 }
 
-function findTab(id) {
-  for (var i = 0; i < state.tabs.length; i++) {
-    if (state.tabs[i].id === id) return state.tabs[i];
+function findTab(i) {
+  for (var k = 0; k < state.tabs.length; k++) {
+    if (state.tabs[k].id === i) return state.tabs[k];
   }
   return null;
 }
@@ -54,8 +61,8 @@ function findTab(id) {
 function findGroup(tabId, groupId) {
   var tab = findTab(tabId);
   if (!tab || !tab.groups) return null;
-  for (var i = 0; i < tab.groups.length; i++) {
-    if (tab.groups[i].id === groupId) return tab.groups[i];
+  for (var k = 0; k < tab.groups.length; k++) {
+    if (tab.groups[k].id === groupId) return tab.groups[k];
   }
   return null;
 }
@@ -73,205 +80,210 @@ function itemById(id) {
   return null;
 }
 
-/* ---------------- rendering ---------------- */
+/* ---------------- category bar ---------------- */
 
-function renderTabs() {
-  el.tabs.innerHTML = "";
+function renderCategories() {
+  if (!el.categories) return;
+  var keep = el.categories.querySelectorAll(".PCategory");
+  for (var k = 0; k < keep.length; k++) keep[k].remove();
+
   for (var i = 0; i < state.tabs.length; i++) {
-    var tab = state.tabs[i];
-    var node = document.createElement("div");
-    node.className = "tab" + (tab.id === state.tabId ? " active" : "");
-    node.textContent = tab.label;
-    (function (id) {
-      node.addEventListener("click", function () {
-        /* Presentation only - Lua keeps the cursor. Clicking a tab is
-           a visual affordance; navigation stays keyboard driven. */
-        var t = findTab(id);
-        if (t && t.groups && t.groups.length) {
-          el.list.scrollTop = 0;
-        }
-      });
-    })(tab.id);
-    el.tabs.appendChild(node);
+    (function (i) {
+      var c = document.createElement("div");
+      c.className = "PCategory" + (i === state.tabIndex ? " active" : "");
+      c.textContent = state.tabs[i].label;
+      c.addEventListener("click", function () { el.list.scrollTop = 0; });
+      el.categories.appendChild(c);
+    })(i);
   }
+  moveHighlight();
 }
 
-function textNode(item, selected) {
-  var row = document.createElement("li");
-  row.className = "row";
+/* The original slides a full-width pill with transform; here each category
+   gets an equal slice and the pill translates to the active one. */
+function moveHighlight() {
+  if (!el.highlight || !state.tabs.length) return;
+  var pct = 100 / state.tabs.length;
+  el.highlight.style.width = pct + "%";
+  el.highlight.style.transform = "translateX(" + (state.tabIndex * 100) + "%)";
+}
 
+/* ---------------- rows ---------------- */
+
+function rowShell(item, selected) {
+  var row = document.createElement("li");
+  row.className = "VTab" + (selected ? " Selected" : "");
   if (item.type === "text" && /:\s*$/.test(item.label || "")) row.className += " heading";
   if (item.type === "smalltext") row.className += " smalltext";
   if (item.centered) row.className += " centered";
-  if (selected) row.className += " sel";
-
-  var label = document.createElement("span");
-  label.className = "label";
-  label.textContent = item.label || "";
-  row.appendChild(label);
   return row;
 }
 
-function checkboxNode(item, selected) {
-  var row = document.createElement("li");
-  row.className = "row" + (selected ? " sel" : "") + (item.checked ? " on" : "");
+function labelNode(item) {
+  var l = document.createElement("span");
+  l.className = "VTLabel";
+  l.textContent = item.label || "";
+  return l;
+}
 
+function optionsNode() {
+  var o = document.createElement("span");
+  o.className = "VOptions";
+  return o;
+}
+
+function valNode(text) {
+  var v = document.createElement("span");
+  v.className = "Val";
+  v.innerHTML = "<b>" + (text === undefined || text === null ? "" : String(text)) + "</b>";
+  return v;
+}
+
+function checkboxNode(item) {
   var box = document.createElement("span");
-  box.className = "box";
-  row.appendChild(box);
-
-  var label = document.createElement("span");
-  label.className = "label";
-  label.textContent = item.label || "";
-  row.appendChild(label);
-
-  return row;
+  box.className = "Checkbox" + (item.checked ? " on" : "");
+  var knob = document.createElement("i");
+  box.appendChild(knob);
+  return box;
 }
 
-function sliderNode(item, selected) {
-  var row = document.createElement("li");
-  row.className = "row" + (selected ? " sel" : "");
+function sliderNode(item) {
+  var wrap = document.createElement("span");
+  wrap.className = "Slider";
+  var min = item.min || 0, max = item.max || 100;
+  var pct = max > min ? (item.value - min) / (max - min) : 0;
+  if (pct < 0) pct = 0; if (pct > 1) pct = 1;
 
-  var label = document.createElement("span");
-  label.className = "label";
-  label.textContent = item.label || "";
-  row.appendChild(label);
-
-  var track = document.createElement("span");
-  track.className = "track";
   var fill = document.createElement("span");
-  fill.className = "fill";
-  var min = item.min || 0;
-  var max = item.max || 100;
-  var pct = max > min ? ((item.value - min) / (max - min)) * 100 : 0;
-  fill.style.width = Math.max(0, Math.min(100, pct)) + "%";
-  track.appendChild(fill);
-  row.appendChild(track);
+  fill.className = "BarFill";
+  fill.style.width = (pct * 100) + "%";
+  wrap.appendChild(fill);
 
-  var val = document.createElement("span");
-  val.className = "val";
-  val.innerHTML = "<strong>" + item.value + "</strong>" + (item.suffix || "");
-  row.appendChild(val);
-
-  return row;
+  var thumb = document.createElement("i");
+  thumb.style.left = (pct * 100) + "%";
+  wrap.appendChild(thumb);
+  return wrap;
 }
 
-function valueNode(item, selected, text, empty) {
-  var row = document.createElement("li");
-  row.className = "row" + (selected ? " sel" : "");
-
-  var label = document.createElement("span");
-  label.className = "label";
-  label.textContent = item.label || "";
-  row.appendChild(label);
-
-  var val = document.createElement("span");
-  val.className = "val";
-  val.innerHTML = "<strong>" + (text || "") + "</strong>";
-  row.appendChild(val);
-
-  return row;
-}
-
-function dropdownNode(item, selected) {
-  var options = item.options || [];
-  var text = options[item.value - 1] !== undefined ? options[item.value - 1] : "-";
-  return valueNode(item, selected, String(text), false);
-}
-
-function inputNode(item, selected) {
-  var row = document.createElement("li");
-  row.className = "row" + (selected ? " sel" : "");
-
-  var label = document.createElement("span");
-  label.className = "label";
-  label.textContent = item.label || "";
-  row.appendChild(label);
-
-  var val = document.createElement("span");
+function inputNode(item) {
   var has = item.value !== undefined && item.value !== null && item.value !== "";
-  val.className = "input-val" + (has ? "" : " empty");
-  val.textContent = has ? item.value : (item.placeholder || "");
-  row.appendChild(val);
-
-  return row;
+  var v = document.createElement("span");
+  v.className = "InputVal" + (has ? "" : " empty");
+  v.textContent = has ? item.value : (item.placeholder || "");
+  return v;
 }
 
-function keybindNode(item, selected) {
-  var row = document.createElement("li");
-  row.className = "row" + (selected ? " sel" : "");
-
-  var label = document.createElement("span");
-  label.className = "label";
-  label.textContent = item.label || "";
-  row.appendChild(label);
-
-  var val = document.createElement("span");
-  val.className = "kb-val";
-  val.textContent = item.value || "unbound";
-  row.appendChild(val);
-
-  return row;
+function keybindNode(item) {
+  var v = document.createElement("span");
+  v.className = "KeyVal";
+  v.textContent = item.value || "unbound";
+  return v;
 }
 
 function buildRow(item, selected) {
-  switch (item.type) {
-    case "checkbox": return checkboxNode(item, selected);
-    case "slider":   return sliderNode(item, selected);
-    case "dropdown": return dropdownNode(item, selected);
-    case "input":    return inputNode(item, selected);
-    case "keybind":  return keybindNode(item, selected);
-    default:         return textNode(item, selected);
+  var row = rowShell(item, selected);
+  row.appendChild(labelNode(item));
+
+  if (item.type === "button" || item.type === "text" || item.type === "smalltext") {
+    return row;
   }
+
+  var o = optionsNode();
+  if (item.type === "checkbox") {
+    o.appendChild(checkboxNode(item));
+  } else if (item.type === "slider") {
+    o.appendChild(valNode(item.value + (item.suffix || "")));
+    o.appendChild(sliderNode(item));
+  } else if (item.type === "dropdown") {
+    var opts = item.options || [];
+    o.appendChild(valNode(opts[item.value - 1] !== undefined ? opts[item.value - 1] : "-"));
+  } else if (item.type === "input") {
+    o.appendChild(inputNode(item));
+  } else if (item.type === "keybind") {
+    o.appendChild(keybindNode(item));
+  }
+  row.appendChild(o);
+  return row;
 }
 
-function renderGroups(tab) {
-  state.mode = "groups";
-  el.crumb.textContent = state.title;
-  el.hint.textContent = "select a group";
-
-  el.list.innerHTML = "";
-  var groups = (tab && tab.groups) || [];
-  for (var i = 0; i < groups.length; i++) {
-    var row = document.createElement("li");
-    row.className = "row" + (i === state.index ? " sel" : "");
-    var label = document.createElement("span");
-    label.className = "label";
-    label.textContent = groups[i].label;
-    row.appendChild(label);
-    var count = (groups[i].items || []).length;
-    var val = document.createElement("span");
-    val.className = "val";
-    val.textContent = count ? count + " items" : "";
-    row.appendChild(val);
-    el.list.appendChild(row);
-  }
+function buildGroupRow(group, selected) {
+  var row = document.createElement("li");
+  row.className = "VTab" + (selected ? " Selected" : "");
+  var l = document.createElement("span");
+  l.className = "VTLabel";
+  l.textContent = group.label;
+  row.appendChild(l);
+  var o = optionsNode();
+  var count = (group.items || []).length;
+  if (count) o.appendChild(valNode(count));
+  row.appendChild(o);
+  return row;
 }
 
-function renderItems(group) {
-  state.mode = "items";
-  var tab = findTab(state.tabId);
-  var tabLabel = tab ? tab.label : "";
-  el.crumb.textContent = (group ? group.label : "") + "  /  " + tabLabel;
-  el.hint.textContent = "backspace to go back";
+/* ---------------- scroll indicator ---------------- */
 
-  el.list.innerHTML = "";
-  var items = (group && group.items) || [];
-  for (var i = 0; i < items.length; i++) {
-    el.list.appendChild(buildRow(items[i], i === state.index));
-  }
-  scrollSelected();
+function renderScroll(items, index) {
+  if (!el.vscroll) return;
+  el.vscroll.innerHTML = "";
+  if (!items || !items.length) return;
+
+  var total = items.length;
+  var visible = Math.max(1, Math.floor(el.list.clientHeight / (el.list.scrollHeight || 1) * total) || total);
+  var pct = Math.max(0.08, Math.min(1, visible / total));
+  var barH = pct * 100;
+  var maxScroll = el.list.scrollHeight - el.list.clientHeight;
+  var pos = maxScroll > 0 ? (el.list.scrollTop / maxScroll) * (100 - barH) : 0;
+
+  var bar = document.createElement("i");
+  bar.className = "on";
+  bar.style.height = barH + "%";
+  bar.style.marginTop = pos + "%";
+  el.vscroll.appendChild(bar);
 }
 
 function scrollSelected() {
-  var sel = el.list.querySelector(".sel");
+  var sel = el.list.querySelector(".Selected");
   if (!sel) return;
   var top = sel.offsetTop - el.list.clientHeight / 2 + sel.offsetHeight / 2;
   el.list.scrollTop = Math.max(0, top);
 }
 
+/* ---------------- render ---------------- */
+
+function renderGroups(tab) {
+  state.mode = "groups";
+  el.footerName.textContent = tab ? tab.label : state.title;
+  el.desc.classList.add("hidden");
+
+  var groups = (tab && tab.groups) || [];
+  el.list.innerHTML = "";
+  for (var i = 0; i < groups.length; i++) {
+    el.list.appendChild(buildGroupRow(groups[i], i === state.index));
+  }
+  renderScroll(groups, state.index);
+}
+
+function renderItems(group) {
+  state.mode = "items";
+  var tab = findTab(state.tabId);
+  el.footerName.textContent = (group ? group.label : "") + (tab ? " / " + tab.label : "");
+
+  if (el.desc && el.descText) {
+    el.descText.textContent = "BACKSPACE - back   |   ENTER - select   |   LEFT / RIGHT - adjust";
+    el.desc.classList.remove("hidden");
+  }
+
+  var items = (group && group.items) || [];
+  el.list.innerHTML = "";
+  for (var i = 0; i < items.length; i++) {
+    el.list.appendChild(buildRow(items[i], i === state.index));
+  }
+  scrollSelected();
+  renderScroll(items, state.index);
+}
+
 function render() {
-  renderTabs();
+  renderCategories();
   if (state.mode === "items") {
     renderItems(findGroup(state.tabId, state.groupId));
   } else {
@@ -279,67 +291,101 @@ function render() {
   }
 }
 
-/* ---------------- dropdown overlay ---------------- */
+/* ---------------- dropdown ---------------- */
 
 function openDropdown(data) {
   el.ddList.innerHTML = "";
   var options = data.options || [];
+  var cur = (data.value || 1) - 1;
   for (var i = 0; i < options.length; i++) {
-    var li = document.createElement("li");
-    if (i === (data.value || 1) - 1) li.className = "sel";
-    var name = document.createElement("span");
-    name.textContent = options[i];
-    li.appendChild(name);
-    if (i === (data.value || 1) - 1) {
-      var tick = document.createElement("span");
-      tick.className = "tick";
-      tick.textContent = "✓";
-      li.appendChild(tick);
-    }
-    (function (idx) {
+    (function (i) {
+      var li = document.createElement("li");
+      if (i === cur) li.className = "sel";
+      var name = document.createElement("span");
+      name.textContent = options[i];
+      li.appendChild(name);
+      if (i === cur) {
+        var tick = document.createElement("span");
+        tick.className = "tick";
+        tick.textContent = "✔";
+        li.appendChild(tick);
+      }
       li.addEventListener("click", function () {
-        /* Visual only; Lua confirms with the arrow keys. */
-        for (var j = 0; j < el.ddList.children.length; j++) {
-          el.ddList.children[j].className = j === idx ? "sel" : "";
-        }
-        state.ddIndex = idx;
+        var kids = el.ddList.children;
+        for (var j = 0; j < kids.length; j++) kids[j].className = j === i ? "sel" : "";
       });
+      el.ddList.appendChild(li);
     })(i);
-    el.ddList.appendChild(li);
   }
   el.dd.classList.remove("hidden");
 }
 
-function closeDropdown() {
-  el.dd.classList.add("hidden");
-}
+function closeDropdown() { el.dd.classList.add("hidden"); }
 
-/* ---------------- toasts ---------------- */
+/* ---------------- notifications ---------------- */
 
 function toast(data) {
   var node = document.createElement("div");
-  node.className = "toast " + (data.kind === "ok" ? "ok" : data.kind === "err" ? "err" : "");
+  node.className = "Notification " + (data.kind === "ok" ? "ok" : data.kind === "err" ? "err" : "");
 
   var t = document.createElement("div");
-  t.className = "t";
+  t.className = "NotificationTitle";
   t.textContent = data.title || "";
   node.appendChild(t);
 
   var m = document.createElement("div");
-  m.className = "m";
+  m.className = "NotificationDesc";
   m.textContent = data.message || "";
   node.appendChild(m);
 
+  var bar = document.createElement("div");
+  bar.className = "NotificationProgress";
+  node.appendChild(bar);
+
   el.toasts.appendChild(node);
 
-  var life = typeof data.time === "number" && data.time > 0 ? data.time : 4000;
+  var life = (typeof data.time === "number" && data.time > 0) ? data.time : 4000;
+  requestAnimationFrame(function () { node.classList.add("in"); });
+
+  bar.animate(
+    [{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }],
+    { duration: life, easing: "linear", fill: "forwards" }
+  );
+
   setTimeout(function () {
-    node.className += " out";
-    setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 300);
+    node.classList.remove("in");
+    setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 450);
   }, life);
 }
 
-/* ---------------- messages from Lua ---------------- */
+/* ---------------- keybinds ---------------- */
+
+function renderKeybinds(list) {
+  if (!el.kbList) return;
+  el.kbList.innerHTML = "";
+
+  var rows = [];
+  if (state.menuKey) rows.push({ value: state.menuKey, label: "Menu" });
+  for (var i = 0; i < (list || []).length; i++) {
+    if (list[i] && list[i].value) rows.push(list[i]);
+  }
+
+  if (!rows.length) { el.keybinds.classList.add("hidden"); return; }
+  for (var r = 0; r < rows.length; r++) {
+    var row = document.createElement("div");
+    row.className = "Keybind";
+    var b = document.createElement("b");
+    b.textContent = rows[r].value || "-";
+    var s = document.createElement("span");
+    s.textContent = rows[r].label || "";
+    row.appendChild(b);
+    row.appendChild(s);
+    el.kbList.appendChild(row);
+  }
+  el.keybinds.classList.remove("hidden");
+}
+
+/* ---------------- messages ---------------- */
 
 function handle(data) {
   if (typeof data === "string") {
@@ -354,15 +400,14 @@ function handle(data) {
       state.tabs = data.tabs || [];
       state.keybinds = data.keybinds || [];
 
-      el.brand.textContent = String(state.brand).toUpperCase();
-      el.version.textContent = "v" + (data.version || "1.0");
-      el.bannerText.textContent = String(state.brand).toUpperCase();
-      el.bannerTag.textContent = "v" + (data.version || "1.0");
-      el.status.textContent = data.status || "";
+      el.bannerName.textContent = String(state.brand).toUpperCase();
+      el.bannerVer.textContent = "v" + (data.version || "1.0");
+      el.footerBrand.textContent = String(state.brand).slice(0, 2).toUpperCase();
+      el.footerName.textContent = state.brand;
+      el.footerStatus.textContent = data.status || "";
 
       setAccent(data.accent);
-      /* Respect the open/closed state Lua already has, so a late-arriving
-         init cannot pop the menu open behind the player's back. */
+      renderKeybinds(state.keybinds);
       if (data.visible === false) el.menu.classList.add("hidden");
       else el.menu.classList.remove("hidden");
       render();
@@ -370,26 +415,32 @@ function handle(data) {
 
     case "show":
       el.menu.classList.remove("hidden");
+      render();
       break;
 
     case "hide":
       el.menu.classList.add("hidden");
       closeDropdown();
-      el.kb.classList.add("hidden");
+      el.keyboard.classList.add("hidden");
+      el.desc.classList.add("hidden");
       break;
 
     case "view":
+      if (data.items) {
+        state.mode = "items";
+        state.groupId = data.group || 0;
+      } else {
+        state.mode = "groups";
+        state.groupId = 0;
+      }
       state.tabId = data.tab || 0;
       state.index = typeof data.index === "number" ? data.index : 0;
-      if (data.items) {
-        state.groupId = data.group || 0;
-        renderItems(findGroup(state.tabId, state.groupId));
-      } else {
-        state.groupId = 0;
-        renderGroups(findTab(state.tabId));
+
+      /* tabs arrive as ids; the bar works on position */
+      for (var i = 0; i < state.tabs.length; i++) {
+        if (state.tabs[i].id === state.tabId) { state.tabIndex = i; break; }
       }
-      renderTabs();
-      if (state.mode === "items") scrollSelected();
+      render();
       break;
 
     case "text": {
@@ -415,7 +466,8 @@ function handle(data) {
       break;
 
     case "menuKey":
-      el.menuKey.textContent = data.value || "INSERT";
+      state.menuKey = data.value || "INSERT";
+      renderKeybinds(state.keybinds);
       break;
 
     case "notify":
@@ -426,10 +478,10 @@ function handle(data) {
       if (data.visible) {
         el.kbTitle.textContent = data.title || "Input";
         el.kbValue.textContent = data.value || "";
-        el.kbValue.className = "kb-value" + (data.hint ? " hint" : "");
-        el.kb.classList.remove("hidden");
+        el.kbValue.className = "PromptValue" + (data.hint ? " hint" : "");
+        el.keyboard.classList.remove("hidden");
       } else {
-        el.kb.classList.add("hidden");
+        el.keyboard.classList.add("hidden");
       }
       break;
 
@@ -439,13 +491,7 @@ function handle(data) {
   }
 }
 
-window.addEventListener("message", function (event) {
-  handle(event.data);
-});
-
-/* Fallback for a plain browser preview. */
-if (typeof window.GetParentResourceName === "function") {
-  /* FiveM NUI: nothing further needed, messages arrive on window. */
-}
+window.addEventListener("message", function (event) { handle(event.data); });
+window.addEventListener("resize", function () { render(); });
 
 window.LS_DEBUG = { state: state, handle: handle };

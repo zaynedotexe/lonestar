@@ -3,64 +3,69 @@
 <head>
 <meta charset="utf-8" />
 <title>Lonestar</title>
-<link rel="stylesheet" href="style.css?v=3" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
 
-<!-- Painted visible by default: the DUI is remote, so the first Lua message
-     can arrive before this page exists. Never start hidden. -->
-<div id="menu" class="menu">
+<!-- Same structure as the Allstar DUI: a compact panel anchored to the left,
+     vertically centred, with the rest of the page left transparent. -->
+<div id="menu" class="VWrapper">
 
-  <div class="banner">
-    <span class="banner-text" id="bannerText">LONESTAR</span>
-    <span class="banner-tag" id="bannerTag">v1.0</span>
-  </div>
+  <div class="VLeftElements">
 
-  <div class="frame">
-
-    <aside class="rail">
-      <div class="brand">
-        <span class="brand-name" id="brand">LONESTAR</span>
-        <span class="brand-version" id="version">v1.0</span>
+    <div class="VBanner">
+      <div class="VBannerGlow"></div>
+      <div class="VBannerText">
+        <span id="bannerName">LONESTAR</span>
+        <em id="bannerVer">v1.0</em>
       </div>
-      <nav class="tabs" id="tabs"></nav>
-      <div class="rail-foot">
-        <div class="kb-row"><b id="menuKey">INSERT</b><span>toggle</span></div>
-        <div class="kb-row"><b>ENTER</b><span>select</span></div>
-        <div class="kb-row"><b>BACK</b><span>back</span></div>
-        <div class="kb-row"><b>PAGE</b><span>tab</span></div>
+    </div>
+
+    <div class="PCategories" id="categories">
+      <div class="highlight" id="highlight"></div>
+    </div>
+
+    <div class="VLeftInnerElements">
+      <div class="VScroll" id="vscroll"></div>
+      <div class="VTabs" id="list"></div>
+    </div>
+
+    <div class="VFooter">
+      <div class="FooterInfo">
+        <span class="FooterLogo" id="footerBrand">LS</span>
+        <span class="Name" id="footerName">Lonestar</span>
       </div>
-    </aside>
-
-    <section class="body">
-      <header class="head">
-        <div class="crumb">
-          <h1 id="crumb">Lonestar</h1>
-          <span class="sub" id="hint">select a group</span>
-        </div>
-        <div class="status" id="status">detecting...</div>
-      </header>
-      <ul class="list" id="list"></ul>
-    </section>
+      <span class="Indicator" id="footerStatus">detecting</span>
+    </div>
 
   </div>
-
 </div>
 
-<div id="dropdown" class="dropdown hidden">
-  <ul id="dropdownList"></ul>
-</div>
+<!-- bottom-centre hint, as in Allstar -->
+<div id="desc" class="VDesc hidden"><span id="descText"></span></div>
 
-<div id="keyboard" class="keyboard hidden">
-  <div class="kb-box">
-    <div class="kb-title" id="kbTitle">Input</div>
-    <div class="kb-value" id="kbValue"></div>
-    <div class="kb-foot"><span><b>ENTER</b> confirm</span><span><b>ESC</b> cancel</span></div>
+<!-- bottom-centre input prompt -->
+<div id="keyboard" class="InputWrapper hidden">
+  <div class="VBind">
+    <div class="PromptText">
+      <span class="PromptTitle" id="kbTitle">Input</span>
+      <span class="PromptValue" id="kbValue"></span>
+    </div>
   </div>
 </div>
 
-<div id="toasts" class="toasts"></div>
+<!-- top-left keybind list -->
+<div id="keybinds" class="KBLWrapper hidden">
+  <div class="Keybinds" id="kbList"></div>
+</div>
 
-<script src="app.js?v=3"></script>
+<div id="dropdown" class="Dropdown hidden"><ul id="dropdownList"></ul></div>
+
+<div class="NotificationsWrapper" id="toasts"></div>
+
+<script src="app.js?v=4"></script>
 </body>
 </html>
