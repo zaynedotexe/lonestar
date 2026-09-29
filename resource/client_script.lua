@@ -841,18 +841,43 @@ end
 function UI:PushTree()
     local binds = {}
     for i, item in ipairs(UI.keybindItems) do
-        binds[i] = { label = item.label, value = UI.keyNames[item.value] or "" }
+        binds[i] = { label = item.label, value = UI:KeyLabel(item.value) }
     end
+
+    local framework, ac = "none", 0
+    if LS.Framework then pcall(function() framework = LS.Framework() or "none" end) end
+    if LS.Anticheats then pcall(function() ac = #(LS.Anticheats or {}) end) end
+
     Send({
         action  = "init",
-        brand   = LS.Brand .. " v" .. LS.Version,
+        brand   = LS.Brand,
+        version = LS.Version,
+        status  = ("%s | AC: %d | target: %s"):format(
+            tostring(framework), ac, tostring(LS.SafeTarget and LS.SafeTarget() or "?")),
         title   = UI.window and UI.window.title or "Lonestar",
         accent  = self:AccentHex(),
         tabs    = self:Tree(),
         keybinds = binds,
+        visible = UI.visible,
     })
     self:FlushText(true)
     self:SyncView()
+end
+
+-- A Macho DUI exposes no load callback and no NUI callbacks, so anything sent
+-- straight after MachoCreateDui is dropped when the remote page has not
+-- finished loading. Re-push for a while, and again on every open.
+function UI:Start()
+    if not self:Create() then return false end
+    self:PushTree()
+
+    CreateThread(function()
+        for _, delay in ipairs({ 400, 700, 1000, 1500, 2000, 3000 }) do
+            Wait(delay)
+            self:PushTree()
+        end
+    end)
+    return true
 end
 
 function UI:FlushText(force)
@@ -1284,6 +1309,7 @@ function UI:Show()
     UI.visible = true
     UI.inGroup = false
     UI.itemIndex = 1
+    self:PushTree()          -- never open with a stale or missing tree
     Send({ action = "show" })
     pcall(MachoShowDui, UI.dui)
     self:SyncView()
@@ -5653,9 +5679,8 @@ end)
 CreateThread(function()
     Wait(0)
     local ui = LS.UI
-    if not ui or not ui.Create then return end
-    if ui:Create() then
-        ui:PushTree()
+    if not ui or not ui.Start then return end
+    if ui:Start() then
         print(("^1[Lonestar]^7 DUI ready - %s"):format(tostring(ui.duiUrl)))
     end
 end)

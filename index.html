@@ -2,34 +2,48 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Lonestar</title>
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
 
-<div id="menu" class="menu hidden">
+<!-- Painted visible by default: the DUI is remote, so the first Lua message
+     can arrive before this page exists. Never start hidden. -->
+<div id="menu" class="menu">
 
-  <aside class="rail">
-    <div class="brand">
-      <span class="brand-name" id="brand">Lonestar</span>
-      <span class="brand-version" id="version"></span>
-    </div>
-    <nav class="tabs" id="tabs"></nav>
-    <div class="rail-foot">
-      <div class="keybind-row"><span id="menuKey">INSERT</span><em>toggle menu</em></div>
-      <div class="keybind-row"><span>ENTER</span><em>select</em></div>
-      <div class="keybind-row"><span>BACK</span><em>back</em></div>
-    </div>
-  </aside>
+  <div class="banner">
+    <span class="banner-text" id="bannerText">LONESTAR</span>
+    <span class="banner-tag" id="bannerTag">v1.0</span>
+  </div>
 
-  <section class="body">
-    <header class="head">
-      <h1 id="crumb">Lonestar</h1>
-      <span class="sub" id="hint"></span>
-    </header>
-    <ul class="list" id="list"></ul>
-  </section>
+  <div class="frame">
+
+    <aside class="rail">
+      <div class="brand">
+        <span class="brand-name" id="brand">LONESTAR</span>
+        <span class="brand-version" id="version">v1.0</span>
+      </div>
+      <nav class="tabs" id="tabs"></nav>
+      <div class="rail-foot">
+        <div class="kb-row"><b id="menuKey">INSERT</b><span>toggle</span></div>
+        <div class="kb-row"><b>ENTER</b><span>select</span></div>
+        <div class="kb-row"><b>BACK</b><span>back</span></div>
+        <div class="kb-row"><b>PAGE</b><span>tab</span></div>
+      </div>
+    </aside>
+
+    <section class="body">
+      <header class="head">
+        <div class="crumb">
+          <h1 id="crumb">Lonestar</h1>
+          <span class="sub" id="hint">select a group</span>
+        </div>
+        <div class="status" id="status">detecting...</div>
+      </header>
+      <ul class="list" id="list"></ul>
+    </section>
+
+  </div>
 
 </div>
 
@@ -41,15 +55,12 @@
   <div class="kb-box">
     <div class="kb-title" id="kbTitle">Input</div>
     <div class="kb-value" id="kbValue"></div>
-    <div class="kb-foot">
-      <span><b>ENTER</b> confirm</span>
-      <span><b>ESC</b> cancel</span>
-    </div>
+    <div class="kb-foot"><span><b>ENTER</b> confirm</span><span><b>ESC</b> cancel</span></div>
   </div>
 </div>
 
 <div id="toasts" class="toasts"></div>
 
-<script src="app.js"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

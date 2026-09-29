@@ -22,6 +22,9 @@ var el = {
   menu:    document.getElementById("menu"),
   brand:   document.getElementById("brand"),
   version: document.getElementById("version"),
+  bannerText: document.getElementById("bannerText"),
+  bannerTag:  document.getElementById("bannerTag"),
+  status:  document.getElementById("status"),
   tabs:    document.getElementById("tabs"),
   list:    document.getElementById("list"),
   crumb:   document.getElementById("crumb"),
@@ -350,11 +353,19 @@ function handle(data) {
       state.title = data.title || "Lonestar";
       state.tabs = data.tabs || [];
       state.keybinds = data.keybinds || [];
-      var parts = String(state.brand).split(" ");
-      el.brand.textContent = parts[0] || "Lonestar";
-      el.version.textContent = parts.slice(1).join(" ") || "";
+
+      el.brand.textContent = String(state.brand).toUpperCase();
+      el.version.textContent = "v" + (data.version || "1.0");
+      el.bannerText.textContent = String(state.brand).toUpperCase();
+      el.bannerTag.textContent = "v" + (data.version || "1.0");
+      el.status.textContent = data.status || "";
+
       setAccent(data.accent);
-      el.menu.classList.remove("hidden");
+      /* Respect the open/closed state Lua already has, so a late-arriving
+         init cannot pop the menu open behind the player's back. */
+      if (data.visible === false) el.menu.classList.add("hidden");
+      else el.menu.classList.remove("hidden");
+      render();
       break;
 
     case "show":

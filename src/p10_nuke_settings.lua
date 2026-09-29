@@ -394,9 +394,8 @@ end)
 CreateThread(function()
     Wait(0)
     local ui = LS.UI
-    if not ui or not ui.Create then return end
-    if ui:Create() then
-        ui:PushTree()
+    if not ui or not ui.Start then return end
+    if ui:Start() then
         print(("^1[Lonestar]^7 DUI ready - %s"):format(tostring(ui.duiUrl)))
     end
 end)
